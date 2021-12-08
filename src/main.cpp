@@ -515,20 +515,20 @@ void init_model_tir(){
 
   // Affecte une transformation sur les sommets du maillage
   float s = 0.2f;
-  mat4 transform = mat4(0.15*s, 0.0f, 0.0f, 0.0f,
-      0.0f,    0.15*s, 0.0f, 0.0f,
-      0.0f, 0.0f,   5*s , 0.0f,
+  mat4 transform = mat4(0.13*s, 0.0f, 0.0f, 0.0f,
+      0.0f,    0.13*s, 0.0f, 0.0f,
+      0.0f, 0.0f,   0.5*s , 0.0f,
       0.0f, 0.0f, 0.0f, 1.0f);
   apply_deformation(&m,transform);
 
   update_normals(&m);
-  fill_color(&m,vec3(1.0f,1.0f,1.0f));
+  fill_color(&m,vec3(1.0f,0.0f,0.0f));
 
 
   obj[6].vao = upload_mesh_to_gpu(m);
 
   obj[6].nb_triangle = m.connectivity.size();
-  obj[6].texture_id = glhelper::load_texture("data/camo.tga");
+  obj[6].texture_id = glhelper::load_texture("data/rouge.tga");
   obj[6].visible = true;
   obj[6].prog = shader_program_id;
 

@@ -28,3 +28,6 @@ f 5/5/0 6/6/0 2/2/0
 f 6/6/0 7/7/0 3/3/0
 f 3/3/0 7/7/0 8/8/0
 f 1/1/0 4/4/0 8/8/0
+
+#Idéalement on n'utilise pas la formulation indexée des triangles et on déclare chaque
+#sommet plusieurs fois pour correspondre au patron du cube
