@@ -72,4 +72,10 @@ void init_model_1();
 void init_model_2();
 void init_model_3();
 
+void init_model_joueur1();
+void init_model_grand_cube();
+void init_model_petit_cube();
+void init_model_canon();
+void init_model_tir();
+
 void draw_obj3d(const objet3d* const obj, camera cam);

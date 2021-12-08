@@ -9,6 +9,8 @@ in vec3 vnormale;
 in vec4 vcolor;
 in vec2 vtex;
 
+uniform mat4 rotation;
+
 uniform sampler2D texture;
 
 vec3 light=vec3(0.5,0.5,5.0);

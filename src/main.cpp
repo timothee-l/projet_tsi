@@ -13,11 +13,14 @@ GLuint gui_program_id;
 
 camera cam;
 
-const int nb_obj = 3;
+const int nb_obj = 7;
 objet3d obj[nb_obj];
 
 const int nb_text = 2;
 text text_to_draw[nb_text];
+
+// parametres trans & rota
+float angle = 0;
 
 /*****************************************************************************\
 * initialisation                                                              *
@@ -35,6 +38,8 @@ static void init()
   init_model_1();
   init_model_2();
   init_model_3();
+
+  init_model_joueur1();
 
   gui_program_id = glhelper::create_program_from_file("shaders/gui.vert", "shaders/gui.frag"); CHECK_GL_ERROR();
 
@@ -71,17 +76,52 @@ static void init()
 \*****************************************************************************/
 static void keyboard_callback(unsigned char key, int, int)
 {
+  float d_angle=0.1f;
+  float d_trans=0.1f;
+  float translation_x = 0;
+  float translation_z =0;
+  //float dz=0.5f;  
   switch (key)
   {
     case 'p':
       glhelper::print_screen();
       break;
+    case 'a':
+      angle -= d_angle;
+      break;
+    case 'e':
+      angle += d_angle;
+      break;
     case 'q':
-    case 'Q':
+      translation_x = -d_trans;
+      break;
+    case 'd':
+      translation_x = d_trans;
+      break;
+    case 'z':
+      translation_z = -d_trans;
+      break;
+    case 's':
+      translation_z = d_trans;
+      break;
+    case 32:
+      //tir 
+      break;
+    case 'x':
+    case 'X':
     case 27:
       exit(0);
       break;
   }
+  obj[4].tr.rotation_euler = vec3(0.0f,angle,0.0f);
+  obj[5].tr.rotation_euler = vec3(0.0f,angle,0.0f);
+
+  obj[3].tr.translation += vec3(translation_x, 0.0, translation_z);
+  obj[4].tr.translation += vec3(translation_x, 0.0, translation_z);
+  obj[5].tr.translation += vec3(translation_x, 0.0, translation_z);
+  cam.tr.translation += vec3(translation_x, 0.0, translation_z);
+
+
 }
 
 /*****************************************************************************\
@@ -382,4 +422,116 @@ void init_model_3()
   obj[2].prog = shader_program_id;
 
   obj[2].tr.translation = vec3(2.0, 0.0, -10.0);
+}
+
+void init_model_joueur1(){
+  init_model_grand_cube();
+  init_model_petit_cube();
+  init_model_canon();
+  init_model_tir();
+}
+
+void init_model_grand_cube(){
+  // Chargement d'un maillage a partir d'un fichier
+  mesh m = load_obj_file("data/cube.obj");
+
+  // Affecte une transformation sur les sommets du maillage
+  float s = 0.4f;
+  mat4 transform = mat4(1*s, 0.0f, 0.0f, 0.0f,
+      0.0f,    s, 0.0f, 0.0f,
+      0.0f, 0.0f,   1.5*s , 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f);
+  apply_deformation(&m,transform);
+
+  update_normals(&m);
+  fill_color(&m,vec3(1.0f,1.0f,1.0f));
+
+
+  obj[3].vao = upload_mesh_to_gpu(m);
+
+  obj[3].nb_triangle = m.connectivity.size();
+  obj[3].texture_id = glhelper::load_texture("data/camo.tga");
+  obj[3].visible = true;
+  obj[3].prog = shader_program_id;
+
+  obj[3].tr.translation = vec3(0.0, 0.0, -2.0);
+}
+
+void init_model_petit_cube(){
+  // Chargement d'un maillage a partir d'un fichier
+  mesh m = load_obj_file("data/cube.obj");
+
+  // Affecte une transformation sur les sommets du maillage
+  float s = 0.2f;
+  mat4 transform = mat4(1*s, 0.0f, 0.0f, 0.0f,
+      0.0f,    s, 0.0f, 0.0f,
+      0.0f, 0.0f,   1.5*s , 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f);
+  apply_deformation(&m,transform);
+
+  update_normals(&m);
+  fill_color(&m,vec3(1.0f,1.0f,1.0f));
+
+
+  obj[4].vao = upload_mesh_to_gpu(m);
+
+  obj[4].nb_triangle = m.connectivity.size();
+  obj[4].texture_id = glhelper::load_texture("data/camo.tga");
+  obj[4].visible = true;
+  obj[4].prog = shader_program_id;
+
+  obj[4].tr.translation = vec3(0.0, 0.4, -2.0);
+}
+
+void init_model_canon(){
+  // Chargement d'un maillage a partir d'un fichier
+  mesh m = load_obj_file("data/cube.obj");
+
+  // Affecte une transformation sur les sommets du maillage
+  float s = 0.2f;
+  mat4 transform = mat4(0.15*s, 0.0f, 0.0f, 0.0f,
+      0.0f,    0.15*s, 0.0f, 0.0f,
+      0.0f, 0.0f,   5*s , 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f);
+  apply_deformation(&m,transform);
+
+  update_normals(&m);
+  fill_color(&m,vec3(1.0f,1.0f,1.0f));
+
+
+  obj[5].vao = upload_mesh_to_gpu(m);
+
+  obj[5].nb_triangle = m.connectivity.size();
+  obj[5].texture_id = glhelper::load_texture("data/camo.tga");
+  obj[5].visible = true;
+  obj[5].prog = shader_program_id;
+
+  obj[5].tr.translation = vec3(0.0, 0.45, -3.0);
+  obj[5].tr.rotation_center = vec3(0.0,0.0,1);
+}
+void init_model_tir(){
+  // Chargement d'un maillage a partir d'un fichier
+  mesh m = load_obj_file("data/cube.obj");
+
+  // Affecte une transformation sur les sommets du maillage
+  float s = 0.2f;
+  mat4 transform = mat4(0.15*s, 0.0f, 0.0f, 0.0f,
+      0.0f,    0.15*s, 0.0f, 0.0f,
+      0.0f, 0.0f,   5*s , 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f);
+  apply_deformation(&m,transform);
+
+  update_normals(&m);
+  fill_color(&m,vec3(1.0f,1.0f,1.0f));
+
+
+  obj[6].vao = upload_mesh_to_gpu(m);
+
+  obj[6].nb_triangle = m.connectivity.size();
+  obj[6].texture_id = glhelper::load_texture("data/camo.tga");
+  obj[6].visible = true;
+  obj[6].prog = shader_program_id;
+
+  obj[6].tr.translation = vec3(0.0, 0.45, -3.0);
+  obj[6].tr.rotation_center = vec3(0.0,0.0,1);
 }
