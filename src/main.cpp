@@ -34,6 +34,8 @@ int score = 0;
 int dir_cooldown = 0;
 float ennemi_dx = 0.5f;
 
+int blink = 0;
+
 /*****************************************************************************\
 * initialisation                                                              *
 \*****************************************************************************/
@@ -202,20 +204,33 @@ static void timer_callback(int)
   //Rotation canon sur le joueur
   vec3  v_dir = (obj[4].tr.translation - obj[10].tr.translation);
   v_dir /= norm(v_dir);
-  float theta = acos(dot(v_dir,vec3(0.0f,-1.0f,0.0f)));
+  float theta = acos(dot(v_dir,vec3(0.0f,0.0f,-1.0f)));
   theta = abs(theta);
-  float signe_theta = dot(cross(v_dir,vec3(0.0f,1.0f,0.0f)),vec3(0.0f,0.0f,1.0f));
+  float signe_theta = -dot(cross(v_dir,vec3(0.0f,1.0f,0.0f)),vec3(0.0f,0.0f,1.0f));
   signe_theta /= abs(signe_theta);
-  
   theta = theta * signe_theta;
 
-  printf("signe theta %f\n",signe_theta);
-  printf("theta %f\n",theta);
 
-
-  //obj[9].tr.rotation_center = obj[9].tr.translation;
   obj[9].tr.rotation_euler = vec3(0.0f,theta,0.0f);
   obj[10].tr.rotation_euler  = vec3(0.0f,theta,0.0f);
+
+  //Detection tir joueur
+  for (int i=0; i<2;i++){
+    vec3  v_dir = (obj[9].tr.translation - obj[i+6].tr.translation);
+    if((norm(v_dir)<0.3f)&&obj[i+6].visible){
+      printf("touché\n");
+      obj[9].texture_id = glhelper::load_texture("data/rouge.tga");
+      obj[10].texture_id = glhelper::load_texture("data/rouge.tga");
+      obj[8].texture_id = glhelper::load_texture("data/rouge.tga");
+      blink = 5;
+    }
+  }
+  blink--;
+  if(blink==1){
+      obj[9].texture_id = glhelper::load_texture("data/camo.tga");
+      obj[10].texture_id = glhelper::load_texture("data/camo.tga");
+      obj[8].texture_id = glhelper::load_texture("data/camo.tga");
+  }
 
   glutPostRedisplay();
 }
@@ -604,7 +619,6 @@ void init_model_tir(){
 
   update_normals(&m);
   fill_color(&m,vec3(1.0f,0.0f,0.0f));
-
 
 
   obj[6].vao = upload_mesh_to_gpu(m);
