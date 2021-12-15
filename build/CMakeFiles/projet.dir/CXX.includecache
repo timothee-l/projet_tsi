@@ -83,4 +83,8 @@ mesh.hpp
 /fs03/share/users/timothee.levilly/home/Documents/tsi_projet/projet_tsi/src/main.cpp
 declaration.h
 /fs03/share/users/timothee.levilly/home/Documents/tsi_projet/projet_tsi/src/declaration.h
+stdlib.h
+-
+math.h
+-
 

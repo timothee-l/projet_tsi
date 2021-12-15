@@ -6,6 +6,8 @@
  \*****************************************************************************/
 
 #include "declaration.h"
+#include <stdlib.h>
+#include <math.h>
 
 //identifiant des shaders
 GLuint shader_program_id;
@@ -13,20 +15,31 @@ GLuint gui_program_id;
 
 camera cam;
 
-const int nb_obj = 7;
+const int nb_obj = 11;
 objet3d obj[nb_obj];
 
-const int nb_text = 2;
+const int nb_text = 3;
 text text_to_draw[nb_text];
 
 // parametres trans & rota
 float angle = 0;
+
+bool tir_alt = false;
+int tir_cooldown = 0;
+
+int pv = 3;
+int ennemis = 1;
+int score = 0;
+
+int dir_cooldown = 0;
+float ennemi_dx = 0.5f;
 
 /*****************************************************************************\
 * initialisation                                                              *
 \*****************************************************************************/
 static void init()
 {
+  srand(time(NULL));
   shader_program_id = glhelper::create_program_from_file("shaders/shader.vert", "shaders/shader.frag"); CHECK_GL_ERROR();
 
   cam.projection = matrice_projection(60.0f*M_PI/180.0f,1.0f,0.01f,100.0f);
@@ -41,17 +54,32 @@ static void init()
 
   init_model_joueur1();
 
+  init_ennemi_tank();
+
   gui_program_id = glhelper::create_program_from_file("shaders/gui.vert", "shaders/gui.frag"); CHECK_GL_ERROR();
 
-  text_to_draw[0].value = "CPE";
-  text_to_draw[0].bottomLeft = vec2(-0.2, 0.5);
-  text_to_draw[0].topRight = vec2(0.2, 1);
+  char l1[20];
+  sprintf(l1, "PV: %d",pv);
+  char l2[20];
+  sprintf(l2, "Ennemis: %d",ennemis);
+  char l3[20];
+  sprintf(l3, "Score: %d",score);
+
+
+  text_to_draw[0].value = l1;
+  text_to_draw[0].bottomLeft = vec2(-1.0, 0.9);
+  text_to_draw[0].topRight = vec2(-0.68, 1.0);
   init_text(text_to_draw);
 
   text_to_draw[1]=text_to_draw[0];
-  text_to_draw[1].value = "Lyon";
-  text_to_draw[1].bottomLeft.y = 0.0f;
-  text_to_draw[1].topRight.y = 0.5f;
+  text_to_draw[1].value = l2;
+  text_to_draw[1].bottomLeft = vec2(-1.0,0.8);
+  text_to_draw[1].topRight = vec2(-0.5,0.9);
+
+  text_to_draw[2]=text_to_draw[0];
+  text_to_draw[2].value = l3; 
+  text_to_draw[2].bottomLeft = vec2(-1.0,0.7);
+  text_to_draw[2].topRight = vec2(-0.6,0.8);
 }
 
 /*****************************************************************************\
@@ -86,10 +114,10 @@ static void keyboard_callback(unsigned char key, int, int)
     case 'p':
       glhelper::print_screen();
       break;
-    case 'a':
+    case 'e':
       angle -= d_angle;
       break;
-    case 'e':
+    case 'a':
       angle += d_angle;
       break;
     case 'q':
@@ -104,8 +132,8 @@ static void keyboard_callback(unsigned char key, int, int)
     case 's':
       translation_z = d_trans;
       break;
-    case 32:
-      //tir 
+    case ' ': 
+      tir();
       break;
     case 'x':
     case 'X':
@@ -138,6 +166,57 @@ static void special_callback(int key, int, int)
 static void timer_callback(int)
 {
   glutTimerFunc(25, timer_callback, 0);
+
+  mat4 rotation_x = matrice_rotation(obj[6].tr.rotation_euler.x, 1.0f, 0.0f, 0.0f);
+  mat4 rotation_y = matrice_rotation(obj[6].tr.rotation_euler.y, 0.0f, 1.0f, 0.0f);
+  mat4 rotation_z = matrice_rotation(obj[6].tr.rotation_euler.z, 0.0f, 0.0f, 1.0f);
+  mat4 rotation = rotation_x * rotation_y * rotation_z;
+  obj[6].tr.translation -= rotation * vec3(0.0,0.0,0.2);
+
+  rotation_x = matrice_rotation(obj[7].tr.rotation_euler.x, 1.0f, 0.0f, 0.0f);
+  rotation_y = matrice_rotation(obj[7].tr.rotation_euler.y, 0.0f, 1.0f, 0.0f);
+  rotation_z = matrice_rotation(obj[7].tr.rotation_euler.z, 0.0f, 0.0f, 1.0f);
+  rotation = rotation_x * rotation_y * rotation_z;
+  obj[7].tr.translation -= rotation * vec3(0.0,0.0,0.2);
+
+  //TODO verif hitbox
+
+
+  if(tir_cooldown > 0){
+    tir_cooldown --;
+  }
+
+  //Deplacement aléatoire ennemi
+  dir_cooldown --;
+  if(dir_cooldown <= 0){
+    dir_cooldown = 100;
+    ennemi_dx = -0.02f;
+    if((rand()%2) == 0){
+      ennemi_dx = 0.02f; //direction gauche
+    }
+  }
+  obj[8].tr.translation.x+=ennemi_dx;
+  obj[9].tr.translation.x+=ennemi_dx;
+  obj[10].tr.translation.x+=ennemi_dx;
+
+  //Rotation canon sur le joueur
+  vec3  v_dir = (obj[4].tr.translation - obj[10].tr.translation);
+  v_dir /= norm(v_dir);
+  float theta = acos(dot(v_dir,vec3(0.0f,-1.0f,0.0f)));
+  theta = abs(theta);
+  float signe_theta = dot(cross(v_dir,vec3(0.0f,1.0f,0.0f)),vec3(0.0f,0.0f,1.0f));
+  signe_theta /= abs(signe_theta);
+  
+  theta = theta * signe_theta;
+
+  printf("signe theta %f\n",signe_theta);
+  printf("theta %f\n",theta);
+
+
+  //obj[9].tr.rotation_center = obj[9].tr.translation;
+  obj[9].tr.rotation_euler = vec3(0.0f,theta,0.0f);
+  obj[10].tr.rotation_euler  = vec3(0.0f,theta,0.0f);
+
   glutPostRedisplay();
 }
 
@@ -177,7 +256,8 @@ void draw_text(const text * const t)
   glDisable(GL_DEPTH_TEST);
   glUseProgram(t->prog);
 
-  vec2 size = (t->topRight - t->bottomLeft) / float(t->value.size());
+  vec2 size = (t->topRight - t->bottomLeft);
+  size.x /= float(t->value.size());
   
   GLint loc_size = glGetUniformLocation(gui_program_id, "size"); CHECK_GL_ERROR();
   if (loc_size == -1) std::cerr << "Pas de variable uniforme : size" << std::endl;
@@ -338,7 +418,7 @@ void init_model_1()
 
   obj[0].nb_triangle = m.connectivity.size();
   obj[0].texture_id = glhelper::load_texture("data/stegosaurus.tga");
-  obj[0].visible = true;
+  obj[0].visible = false;
   obj[0].prog = shader_program_id;
 
   obj[0].tr.translation = vec3(-2.0, 0.0, -10.0);
@@ -438,7 +518,7 @@ void init_model_grand_cube(){
   // Affecte une transformation sur les sommets du maillage
   float s = 0.4f;
   mat4 transform = mat4(1*s, 0.0f, 0.0f, 0.0f,
-      0.0f,    s, 0.0f, 0.0f,
+      0.0f,    1*s, 0.0f, 0.0f,
       0.0f, 0.0f,   1.5*s , 0.0f,
       0.0f, 0.0f, 0.0f, 1.0f);
   apply_deformation(&m,transform);
@@ -464,7 +544,7 @@ void init_model_petit_cube(){
   // Affecte une transformation sur les sommets du maillage
   float s = 0.2f;
   mat4 transform = mat4(1*s, 0.0f, 0.0f, 0.0f,
-      0.0f,    s, 0.0f, 0.0f,
+      0.0f,    1*s, 0.0f, 0.0f,
       0.0f, 0.0f,   1.5*s , 0.0f,
       0.0f, 0.0f, 0.0f, 1.0f);
   apply_deformation(&m,transform);
@@ -514,6 +594,7 @@ void init_model_tir(){
   mesh m = load_obj_file("data/cube.obj");
 
   // Affecte une transformation sur les sommets du maillage
+
   float s = 0.2f;
   mat4 transform = mat4(0.13*s, 0.0f, 0.0f, 0.0f,
       0.0f,    0.13*s, 0.0f, 0.0f,
@@ -525,13 +606,51 @@ void init_model_tir(){
   fill_color(&m,vec3(1.0f,0.0f,0.0f));
 
 
+
   obj[6].vao = upload_mesh_to_gpu(m);
 
   obj[6].nb_triangle = m.connectivity.size();
   obj[6].texture_id = glhelper::load_texture("data/rouge.tga");
-  obj[6].visible = true;
+  obj[6].visible = false; //Invisible jusqu'au tir
   obj[6].prog = shader_program_id;
 
   obj[6].tr.translation = vec3(0.0, 0.45, -3.0);
   obj[6].tr.rotation_center = vec3(0.0,0.0,1);
+
+  obj[7] = obj[6]; //on clone le tir et les deux objets s'alternent
+  obj[7].texture_id = glhelper::load_texture("data/white.tga");
+
 }
+
+void tir(){
+
+  if (tir_cooldown > 0){return;}
+
+  tir_alt = !tir_alt;
+  tir_cooldown = 30;
+  if(tir_alt){
+    obj[6].visible = true;
+    obj[6].tr.translation = obj[5].tr.translation;
+    obj[6].tr.rotation_center = obj[5].tr.rotation_center;
+    obj[6].tr.rotation_euler =  obj[5].tr.rotation_euler;
+  }else{
+    obj[7].visible = true;
+    obj[7].tr.translation = obj[5].tr.translation;
+    obj[7].tr.rotation_center = obj[5].tr.rotation_center;
+    obj[7].tr.rotation_euler =  obj[5].tr.rotation_euler;
+  }
+
+  return;
+}
+
+void init_ennemi_tank(){
+  //clonage obj 3,4,5
+  obj[8] = obj[3];
+  obj[9] = obj[4];
+  obj[10] = obj[5];
+  obj[8].tr.translation += vec3(-2.0, 0.0, -10.0);
+  obj[9].tr.translation += vec3(-2.0, 0.0, -10.0);
+  obj[10].tr.translation += vec3(-2.0, 0.0, -10.0);
+  return;
+}
+

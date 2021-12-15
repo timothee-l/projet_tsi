@@ -78,4 +78,8 @@ void init_model_petit_cube();
 void init_model_canon();
 void init_model_tir();
 
+void init_ennemi_tank();
+
+void tir();
+
 void draw_obj3d(const objet3d* const obj, camera cam);
