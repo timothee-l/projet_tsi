@@ -15,10 +15,10 @@ GLuint gui_program_id;
 
 camera cam;
 
-const int nb_obj = 11;
+const int nb_obj = 12;
 objet3d obj[nb_obj];
 
-const int nb_text = 3;
+const int nb_text = 5;
 text text_to_draw[nb_text];
 
 // parametres trans & rota
@@ -26,6 +26,10 @@ float angle = 0;
 
 bool tir_alt = false;
 int tir_cooldown = 0;
+int tir_enemy_cooldown = 0;
+
+int damage_cd = 0;
+int enemy_damage_cd = 0;
 
 int pv = 3;
 int ennemis = 1;
@@ -35,7 +39,12 @@ int dir_cooldown = 0;
 float ennemi_dx = 0.5f;
 
 int blink = 0;
+int blink_j = 0;
 
+int enemy_hp = 0;
+
+int difficulte = 1; // La difficulté (vitesse de l'ennemi, vitesse des tirs ennemis et fréquence des tirs ennemis)
+int time_c = 1;
 /*****************************************************************************\
 * initialisation                                                              *
 \*****************************************************************************/
@@ -50,9 +59,9 @@ static void init()
   // cam.tr.rotation_center = vec3(0.0f, 20.0f, 0.0f);
   // cam.tr.rotation_euler = vec3(M_PI/2., 0.0f, 0.0f);
 
-  init_model_1();
+  //init_model_1();
   init_model_2();
-  init_model_3();
+  //init_model_3();
 
   init_model_joueur1();
 
@@ -66,8 +75,11 @@ static void init()
   sprintf(l2, "Ennemis: %d",ennemis);
   char l3[20];
   sprintf(l3, "Score: %d",score);
+  char l4[20];
+  sprintf(l4, "Game Over");
 
-
+  char l5[20];
+  sprintf(l5, "Difficulté: %d",difficulte);
   text_to_draw[0].value = l1;
   text_to_draw[0].bottomLeft = vec2(-1.0, 0.9);
   text_to_draw[0].topRight = vec2(-0.68, 1.0);
@@ -82,6 +94,17 @@ static void init()
   text_to_draw[2].value = l3; 
   text_to_draw[2].bottomLeft = vec2(-1.0,0.7);
   text_to_draw[2].topRight = vec2(-0.6,0.8);
+
+  text_to_draw[3]=text_to_draw[0];
+  text_to_draw[3].value = l4; 
+  text_to_draw[3].bottomLeft = vec2(-0.5,-0.25);
+  text_to_draw[3].topRight = vec2(0.5,0.25);
+  text_to_draw[3].visible = false;
+
+  text_to_draw[4]=text_to_draw[0];
+  text_to_draw[4].value = l5; 
+  text_to_draw[4].bottomLeft = vec2(-1.0,0.6);
+  text_to_draw[4].topRight = vec2(-0.1,0.7);
 }
 
 /*****************************************************************************\
@@ -91,6 +114,20 @@ static void init()
 {
   glClearColor(0.5f, 0.6f, 0.9f, 1.0f); CHECK_GL_ERROR();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CHECK_GL_ERROR();
+
+  char l1[20];
+  sprintf(l1, "PV: %d",pv);
+  char l2[20];
+  sprintf(l2, "Ennemis: %d",ennemis);
+  char l3[20];
+  sprintf(l3, "Score: %d",score);
+  char l4[20];
+  sprintf(l4, "Difficulte: %d",difficulte);
+  text_to_draw[0].value = l1;
+  text_to_draw[1].value = l2;
+  text_to_draw[2].value = l3; 
+  text_to_draw[4].value = l4; 
+
 
   for(int i = 0; i < nb_obj; ++i)
     draw_obj3d(obj + i, cam);
@@ -167,34 +204,63 @@ static void special_callback(int key, int, int)
 \*****************************************************************************/
 static void timer_callback(int)
 {
+  time_c++;
+  if (time_c>800*difficulte){
+    printf("diff +\n");
+    if(difficulte < 6){
+      difficulte++;
+    }
+  }
   glutTimerFunc(25, timer_callback, 0);
 
   mat4 rotation_x = matrice_rotation(obj[6].tr.rotation_euler.x, 1.0f, 0.0f, 0.0f);
   mat4 rotation_y = matrice_rotation(obj[6].tr.rotation_euler.y, 0.0f, 1.0f, 0.0f);
   mat4 rotation_z = matrice_rotation(obj[6].tr.rotation_euler.z, 0.0f, 0.0f, 1.0f);
   mat4 rotation = rotation_x * rotation_y * rotation_z;
-  obj[6].tr.translation -= rotation * vec3(0.0,0.0,0.2);
+  obj[6].tr.translation -= rotation * vec3(0.0,0.0,0.25);
 
   rotation_x = matrice_rotation(obj[7].tr.rotation_euler.x, 1.0f, 0.0f, 0.0f);
   rotation_y = matrice_rotation(obj[7].tr.rotation_euler.y, 0.0f, 1.0f, 0.0f);
   rotation_z = matrice_rotation(obj[7].tr.rotation_euler.z, 0.0f, 0.0f, 1.0f);
   rotation = rotation_x * rotation_y * rotation_z;
-  obj[7].tr.translation -= rotation * vec3(0.0,0.0,0.2);
+  obj[7].tr.translation -= rotation * vec3(0.0,0.0,0.25);
 
-  //TODO verif hitbox
-
+  rotation_x = matrice_rotation(obj[11].tr.rotation_euler.x, 1.0f, 0.0f, 0.0f);
+  rotation_y = matrice_rotation(obj[11].tr.rotation_euler.y, 0.0f, 1.0f, 0.0f);
+  rotation_z = matrice_rotation(obj[11].tr.rotation_euler.z, 0.0f, 0.0f, 1.0f);
+  rotation = rotation_x * rotation_y * rotation_z;
+  obj[11].tr.translation -= rotation * vec3(0.0,0.0,0.15+(difficulte*0.03));
 
   if(tir_cooldown > 0){
     tir_cooldown --;
+  }
+
+  if(tir_enemy_cooldown >0){
+    tir_enemy_cooldown --;
+  }
+
+  if(enemy_damage_cd >0){
+    enemy_damage_cd --;
+  }
+
+  if(damage_cd >0){
+    damage_cd --;
   }
 
   //Deplacement aléatoire ennemi
   dir_cooldown --;
   if(dir_cooldown <= 0){
     dir_cooldown = 100;
-    ennemi_dx = -0.02f;
+    ennemi_dx = -0.02+(difficulte*0.005);
     if((rand()%2) == 0){
-      ennemi_dx = 0.02f; //direction gauche
+      ennemi_dx = 0.02+(difficulte*0.005); //direction gauche
+    }
+  }
+  if(tir_enemy_cooldown <=0){
+    double r = rand();
+    double seuil = RAND_MAX * pow(2,difficulte) / 256;
+    if(r<seuil){//Probabilité de tir (hors temps min.), min. 1 chance sur 64 max 1 sur 1
+      ennemi_tir();
     }
   }
   obj[8].tr.translation.x+=ennemi_dx;
@@ -215,16 +281,27 @@ static void timer_callback(int)
   obj[10].tr.rotation_euler  = vec3(0.0f,theta,0.0f);
 
   //Detection tir joueur
-  for (int i=0; i<2;i++){
-    vec3  v_dir = (obj[9].tr.translation - obj[i+6].tr.translation);
-    if((norm(v_dir)<0.3f)&&obj[i+6].visible){
-      printf("touché\n");
-      obj[9].texture_id = glhelper::load_texture("data/rouge.tga");
-      obj[10].texture_id = glhelper::load_texture("data/rouge.tga");
-      obj[8].texture_id = glhelper::load_texture("data/rouge.tga");
-      blink = 5;
+
+  //Verfication anti-double détection avec un cooldown
+  if(!(enemy_damage_cd>0)){ 
+    for (int i=0; i<2;i++){
+      vec3  v_dir = (obj[9].tr.translation - obj[i+6].tr.translation);
+      if((norm(v_dir)<0.3f)&&obj[i+6].visible){
+        enemy_damage_cd = 5;
+        if(enemy_hp == 1){
+            //Nouvel ennemi
+            score += 100*difficulte;
+            init_ennemi_tank();
+        }
+        enemy_hp --;
+        obj[9].texture_id = glhelper::load_texture("data/rouge.tga");
+        obj[10].texture_id = glhelper::load_texture("data/rouge.tga");
+        obj[8].texture_id = glhelper::load_texture("data/rouge.tga");
+        blink = 5;
+      }
     }
   }
+
   blink--;
   if(blink==1){
       obj[9].texture_id = glhelper::load_texture("data/camo.tga");
@@ -232,8 +309,37 @@ static void timer_callback(int)
       obj[8].texture_id = glhelper::load_texture("data/camo.tga");
   }
 
+//Detection tir ennemi
+
+//Verfication anti-double détection avec un cooldown
+if(!(damage_cd > 0)){
+  v_dir = (obj[4].tr.translation - obj[11].tr.translation);
+  if((norm(v_dir)<0.3f)&&obj[11].visible){
+    damage_cd = 5;
+    if(pv == 1){
+      for(int i = 0; i < nb_obj; ++i){ //gameover
+        obj[i].visible = false;
+        text_to_draw[3].visible = true;
+      }
+    }
+    pv --;
+    obj[3].texture_id = glhelper::load_texture("data/rouge.tga");
+    obj[4].texture_id = glhelper::load_texture("data/rouge.tga");
+    obj[5].texture_id = glhelper::load_texture("data/rouge.tga");
+    blink_j = 5;
+  }
+  blink_j--;
+  if(blink_j==1){
+      obj[3].texture_id = glhelper::load_texture("data/camo.tga");
+      obj[4].texture_id = glhelper::load_texture("data/camo.tga");
+      obj[5].texture_id = glhelper::load_texture("data/camo.tga");
+  }
+}
+
+
   glutPostRedisplay();
 }
+
 
 /*****************************************************************************\
 * main                                                                         *
@@ -436,7 +542,7 @@ void init_model_1()
   obj[0].visible = false;
   obj[0].prog = shader_program_id;
 
-  obj[0].tr.translation = vec3(-2.0, 0.0, -10.0);
+  obj[0].tr.translation = vec3(-200.0, 0.0, -10.0);
 }
 
 void init_model_2()
@@ -540,7 +646,6 @@ void init_model_grand_cube(){
 
   update_normals(&m);
   fill_color(&m,vec3(1.0f,1.0f,1.0f));
-
 
   obj[3].vao = upload_mesh_to_gpu(m);
 
@@ -659,12 +764,28 @@ void tir(){
 
 void init_ennemi_tank(){
   //clonage obj 3,4,5
+  enemy_hp = 3;
   obj[8] = obj[3];
   obj[9] = obj[4];
   obj[10] = obj[5];
   obj[8].tr.translation += vec3(-2.0, 0.0, -10.0);
   obj[9].tr.translation += vec3(-2.0, 0.0, -10.0);
   obj[10].tr.translation += vec3(-2.0, 0.0, -10.0);
+  init_ennemi_tir();
   return;
 }
 
+void init_ennemi_tir(){
+  obj[11] = obj[6]; //Clone du tir du joueur
+  obj[11].texture_id = glhelper::load_texture("data/white.tga");
+}
+
+void ennemi_tir(){
+  if (tir_enemy_cooldown > 0){return;}
+
+  tir_enemy_cooldown = 30;
+  obj[11].visible = true;
+  obj[11].tr.translation = obj[10].tr.translation;
+  obj[11].tr.rotation_center = obj[10].tr.rotation_center;
+  obj[11].tr.rotation_euler =  obj[10].tr.rotation_euler;
+}

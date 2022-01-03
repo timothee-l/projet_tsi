@@ -82,4 +82,7 @@ void init_ennemi_tank();
 
 void tir();
 
+void init_ennemi_tir();
+void ennemi_tir();
+
 void draw_obj3d(const objet3d* const obj, camera cam);
