@@ -1,33 +1,14 @@
-# Projet de jeu video : TSI
+# Jeu 1 joueur, combat de tanks
 
-ATTENTION SI IL MANQUE LES LIBRAIRIES GLUT ET GLEW, COPIER COLLER LE DOSSIER EXTERN DES TUTORIAUX DANS LE DOSSIER PRINCIPAL !
+Commandes:
 
-## Compilation
+Déplacements: Z,Q,S,D
+Rotation tourelle: A,E
+Tir: Barre Espace
 
-Pour compiler et executer à partir du CMakeLists.txt en ligne de commande (Linux et macOs)
+Fonctionnalités:
 
-```sh
-mkdir build
-cd build
-cmake ..
-make
-cd ..
-./build/projet
-```
-
-ou 
-
-```sh
-mkdir build
-cmake . -B build
-make -C ./build && ./build/projet
-```
-
-**Testé sur windows avec Visual Studio Community 2019 (MSVC2019)**
-
-**Note sur l'utilisation des IDE (QtCreator, etc)**
-
-Le repertoire d'execution doit être tp_tsi.
-C'est a dire que le repertoire data/ doit être accessible.         
-
-Image à usage libre : https://www.pexels.com/photo/boston-terrier-wearing-unicorn-pet-costume-1564506/
+Gestion des points de vie: 3 pour le joueur et pour l'adversaire. Un tir réussi fait clignoter la cible en rouge.
+Apparaition d'un nouvel ennemi après la destruction du précédent
+Difficulté: Augmente ponctuellement au cours du temps. Influe sur la vitesse de l'adversaire, la vitesse et la fréquence des tirs et le score gagné par élimination
+Hud: Affichage des PV du joueur, score, difficulté et Game Over
