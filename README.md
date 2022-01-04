@@ -2,7 +2,6 @@
 
 Commandes:
 
-
 Déplacements: Z,Q,S,D
 
 Rotation tourelle: A,E
@@ -11,7 +10,6 @@ Tir: Barre Espace
 
 
 Fonctionnalités:
-
 
 Gestion des points de vie: 3 pour le joueur et pour l'adversaire. Un tir réussi fait clignoter la cible en rouge.
 
