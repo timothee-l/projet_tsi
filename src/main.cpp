@@ -55,13 +55,8 @@ static void init()
 
   cam.projection = matrice_projection(60.0f*M_PI/180.0f,1.0f,0.01f,100.0f);
   cam.tr.translation = vec3(0.0f, 1.0f, 0.0f);
-  // cam.tr.translation = vec3(0.0f, 20.0f, 0.0f);
-  // cam.tr.rotation_center = vec3(0.0f, 20.0f, 0.0f);
-  // cam.tr.rotation_euler = vec3(M_PI/2., 0.0f, 0.0f);
 
-  //init_model_1();
   init_model_2();
-  //init_model_3();
 
   init_model_joueur1();
 
@@ -69,6 +64,7 @@ static void init()
 
   gui_program_id = glhelper::create_program_from_file("shaders/gui.vert", "shaders/gui.frag"); CHECK_GL_ERROR();
 
+ // Affichage tête haute
   char l1[20];
   sprintf(l1, "PV: %d",pv);
   char l2[20];
@@ -147,7 +143,6 @@ static void keyboard_callback(unsigned char key, int, int)
   float d_trans=0.1f;
   float translation_x = 0;
   float translation_z =0;
-  //float dz=0.5f;  
   switch (key)
   {
     case 'p':
@@ -180,9 +175,11 @@ static void keyboard_callback(unsigned char key, int, int)
       exit(0);
       break;
   }
+ //Rotation de la tourelle et du canon
   obj[4].tr.rotation_euler = vec3(0.0f,angle,0.0f);
   obj[5].tr.rotation_euler = vec3(0.0f,angle,0.0f);
 
+ //Translation de l'ensemble du tank
   obj[3].tr.translation += vec3(translation_x, 0.0, translation_z);
   obj[4].tr.translation += vec3(translation_x, 0.0, translation_z);
   obj[5].tr.translation += vec3(translation_x, 0.0, translation_z);
@@ -213,6 +210,7 @@ static void timer_callback(int)
   }
   glutTimerFunc(25, timer_callback, 0);
 
+ //Déplacement des projectiles
   mat4 rotation_x = matrice_rotation(obj[6].tr.rotation_euler.x, 1.0f, 0.0f, 0.0f);
   mat4 rotation_y = matrice_rotation(obj[6].tr.rotation_euler.y, 0.0f, 1.0f, 0.0f);
   mat4 rotation_z = matrice_rotation(obj[6].tr.rotation_euler.z, 0.0f, 0.0f, 1.0f);
@@ -247,7 +245,7 @@ static void timer_callback(int)
     damage_cd --;
   }
 
-  //Deplacement aléatoire ennemi
+  //Changement aléatoire de direction
   dir_cooldown --;
   if(dir_cooldown <= 0){
     dir_cooldown = 100;
@@ -256,6 +254,7 @@ static void timer_callback(int)
       ennemi_dx = 0.02+(difficulte*0.005); //direction gauche
     }
   }
+ //Déclenchement d'un tir de manière aléatoire
   if(tir_enemy_cooldown <=0){
     double r = rand();
     double seuil = RAND_MAX * pow(2,difficulte) / 256;
@@ -263,11 +262,12 @@ static void timer_callback(int)
       ennemi_tir();
     }
   }
+ 
   obj[8].tr.translation.x+=ennemi_dx;
   obj[9].tr.translation.x+=ennemi_dx;
   obj[10].tr.translation.x+=ennemi_dx;
 
-  //Rotation canon sur le joueur
+  //Calcul de l'angle de rotation du canon de l'ennemi pour viser le joueur
   vec3  v_dir = (obj[4].tr.translation - obj[10].tr.translation);
   v_dir /= norm(v_dir);
   float theta = acos(dot(v_dir,vec3(0.0f,0.0f,-1.0f)));
@@ -276,7 +276,7 @@ static void timer_callback(int)
   signe_theta /= abs(signe_theta);
   theta = theta * signe_theta;
 
-
+  //On applique la rotation
   obj[9].tr.rotation_euler = vec3(0.0f,theta,0.0f);
   obj[10].tr.rotation_euler  = vec3(0.0f,theta,0.0f);
 
@@ -294,6 +294,7 @@ static void timer_callback(int)
             init_ennemi_tank();
         }
         enemy_hp --;
+       //On applique temporairement une texture rouge
         obj[9].texture_id = glhelper::load_texture("data/rouge.tga");
         obj[10].texture_id = glhelper::load_texture("data/rouge.tga");
         obj[8].texture_id = glhelper::load_texture("data/rouge.tga");
@@ -303,6 +304,7 @@ static void timer_callback(int)
   }
 
   blink--;
+ //A la fin du délai, on retourne à la texture par défaut
   if(blink==1){
       obj[9].texture_id = glhelper::load_texture("data/camo.tga");
       obj[10].texture_id = glhelper::load_texture("data/camo.tga");
@@ -328,6 +330,7 @@ if(!(damage_cd > 0)){
     obj[5].texture_id = glhelper::load_texture("data/rouge.tga");
     blink_j = 5;
   }
+ //Même méthode pour le joueur
   blink_j--;
   if(blink_j==1){
       obj[3].texture_id = glhelper::load_texture("data/camo.tga");
